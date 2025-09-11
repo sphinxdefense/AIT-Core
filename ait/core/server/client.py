@@ -414,18 +414,25 @@ class TCPInputClient(ZMQClient):
             )
             self._exit()
         while True:
-            packet = self.sub.recv(self.buffer)
-            if not packet:
-                gevent.sleep(1)
-                log.info(
-                    f"Trying to reconnect to client: {self.address[0]}:{self.address[1]}"
-                )
-                if self._connect() != 0:
-                    log.error(
-                        f"Unable to connect to client: {self.address[0]}:{self.address[1]}"
+            try:
+                packet = self.sub.recv(self.buffer)
+                if packet == b"":
+                    log.warning(f"Connection closed by client: {self.address[0]}:{self.address[1]}")
+                    gevent.sleep(1)
+                    log.info(
+                        f"Trying to reconnect to client: {self.address[0]}:{self.address[1]}"
                     )
-                    self._exit()
-            self.process(packet)
+                    if self._connect() != 0:
+                        log.error(
+                            f"Unable to connect to client: {self.address[0]}:{self.address[1]}"
+                        )
+                        self._exit()
+                elif packet:
+                    self.process(packet)
+            except OSError as e:
+                log.error(f"Socket error: {e}")
+                gevent.sleep(1)
+                continue
 
     def _formatinfo(self):
         result = ""
