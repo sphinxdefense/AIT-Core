@@ -342,8 +342,6 @@ class TCPInputClient(ZMQClient):
                 zmq_context, zmq_proxy_xsub_url, zmq_proxy_xpub_url
             )
 
-            self.sub = gevent.socket.socket(gevent.socket.AF_INET, self.protocol)
-
             self.hostname = hostname
             self.port = int(port)
             self.address = (hostname, int(port))
@@ -383,6 +381,16 @@ class TCPInputClient(ZMQClient):
         self.proc = gevent.spawn(self._client)
 
     def _connect(self):
+        # Close old socket if it exists
+        if getattr(self, "sub", None):
+            try:
+                self.sub.close()
+            except OSError as e:
+                log.debug(f"Error closing old socket: {e}")
+
+        # Create new socket
+        self.sub = gevent.socket.socket(gevent.socket.AF_INET, self.protocol)
+
         while self.connection_reattempts:
             try:
                 res = self.sub.connect_ex((self.hostname, self.port))
