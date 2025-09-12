@@ -425,7 +425,7 @@ class TCPInputClient(ZMQClient):
             try:
                 packet = self.sub.recv(self.buffer)
                 if packet == b"":
-                    log.warning(f"Connection closed by client: {self.address[0]}:{self.address[1]}")
+                    log.error(f"Connection closed by client: {self.address[0]}:{self.address[1]}")
                     gevent.sleep(1)
                     log.info(
                         f"Trying to reconnect to client: {self.address[0]}:{self.address[1]}"
